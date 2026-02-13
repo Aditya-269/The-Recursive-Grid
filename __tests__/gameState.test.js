@@ -9,7 +9,6 @@ describe('updateGrid', () => {
                 [0, 0, 0],
                 [0, 0, 0]
             ]);
-            expect(state.moveCount).toBe(0);
         });
     });
 
@@ -72,6 +71,16 @@ describe('updateGrid', () => {
             expect(result[0][1]).toBe(1);
             expect(result[1][0]).toBe(2);
             expect(isLocked(result[0][0])).toBe(true);
+        });
+
+        it('should NOT ripple if value becomes 0 (Safety Guard)', () => {
+            // Setup: Cell at (0,0) is -1. Click -> 0.
+            // 0 % 3 === 0, but should NOT degrade neighbor.
+            const grid = [[-1, 5, 0], [0, 0, 0], [0, 0, 0]];
+            const result = updateGrid(grid, 0, 0);
+
+            expect(result[0][0]).toBe(0);
+            expect(result[0][1]).toBe(5); // Neighbor unchanged
         });
     });
 

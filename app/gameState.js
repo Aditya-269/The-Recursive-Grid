@@ -43,9 +43,7 @@ export function createInitialState() {
             [0, 0, 0],
             [0, 0, 0],
             [0, 0, 0]
-        ],
-        moveCount: 0,
-        isGameOver: false
+        ]
     };
 }
 
@@ -60,9 +58,7 @@ export function createCustomState(grid) {
     }
 
     return {
-        grid: grid.map(row => [...row]), // Deep copy for immutability
-        moveCount: 0,
-        isGameOver: false
+        grid: grid.map(row => [...row]) // Deep copy for immutability
     };
 }
 
@@ -148,54 +144,8 @@ export function getLockedCells(state) {
     return locked;
 }
 
-// ============================================================================
-// IMMUTABLE STATE UPDATES
-// ============================================================================
-
-/**
- * Update a single cell value (immutable)
- * @param {GameState} state - Current game state
- * @param {number} row - Row index (0-2)
- * @param {number} col - Column index (0-2)
- * @param {number} newValue - New cell value
- * @returns {GameState} - New state object
- */
-export function updateCell(state, row, col, newValue) {
-    if (!isValidPosition(row, col)) {
-        throw new Error(`Invalid position: (${row}, ${col})`);
-    }
-
-    if (isCellLocked(state, row, col)) {
-        console.warn(`Cell at (${row}, ${col}) is locked and cannot be updated`);
-        return state; // Return unchanged state
-    }
-
-    // Create new grid with updated value
-    const newGrid = state.grid.map((r, rowIndex) =>
-        rowIndex === row
-            ? r.map((cell, colIndex) => (colIndex === col ? newValue : cell))
-            : [...r] // Deep copy other rows
-    );
-
-    return {
-        ...state,
-        grid: newGrid,
-        moveCount: state.moveCount + 1
-    };
-}
-
-/**
- * Increment a cell value by a delta (immutable)
- * @param {GameState} state - Current game state
- * @param {number} row - Row index (0-2)
- * @param {number} col - Column index (0-2)
- * @param {number} delta - Amount to increment (can be negative)
- * @returns {GameState} - New state object
- */
-export function incrementCell(state, row, col, delta = 1) {
-    const currentValue = getCellValue(state, row, col);
-    return updateCell(state, row, col, currentValue + delta);
-}
+// Unused update helpers removed for strict minimalism
+// (updateCell, incrementCell)
 
 // ============================================================================
 // GAME LOGIC - PURE UPDATE FUNCTION
@@ -238,7 +188,8 @@ export function updateGrid(grid, row, col) {
     // 5. Apply Ripple Rules
 
     // Divisible by 3 -> Decrement RIGHT neighbor
-    if (newValue % 3 === 0) {
+    // Guard: Zero does not trigger ripple (safety)
+    if (newValue !== 0 && newValue % 3 === 0) {
         const rightCol = col + 1;
         if (isValidPosition(row, rightCol)) {
             // Check locked state on updated grid (ripple shouldn't affect locked)
@@ -251,7 +202,8 @@ export function updateGrid(grid, row, col) {
     }
 
     // Divisible by 5 -> Increment BELOW neighbor by 2
-    if (newValue % 5 === 0) {
+    // Guard: Zero does not trigger ripple (safety)
+    if (newValue !== 0 && newValue % 5 === 0) {
         const belowRow = row + 1;
         if (isValidPosition(belowRow, col)) {
             if (!isLocked(newGrid[belowRow][col])) {
@@ -322,18 +274,6 @@ export function isValidGrid(grid) {
     );
 }
 
-/**
- * Deep clone game state for safety
- * @param {GameState} state - State to clone
- * @returns {GameState}
- */
-export function cloneState(state) {
-    return {
-        ...state,
-        grid: state.grid.map(row => [...row])
-    };
-}
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -365,18 +305,4 @@ export function getGridStats(state) {
         sum: values.reduce((acc, val) => acc + val, 0),
         average: values.reduce((acc, val) => acc + val, 0) / 9
     };
-}
-
-/**
- * Print grid to console (for debugging)
- * @param {GameState} state - Current game state
- */
-export function printGrid(state) {
-    console.log('Grid State:');
-    state.grid.forEach((row, i) => {
-        console.log(
-            row.map(val => (isLocked(val) ? `[${val}]` : ` ${val} `)).join(' ')
-        );
-    });
-    console.log(`Moves: ${state.moveCount}, Game Over: ${state.isGameOver}`);
 }

@@ -21,9 +21,8 @@ export default function Home() {
     // Only update state if grid actually changed
     if (newGrid !== gameState.grid) {
       setGameState({
-        ...gameState,
-        grid: newGrid,
-        moveCount: gameState.moveCount + 1
+        ...gameState, // Preserves other state if any (though currently minimal)
+        grid: newGrid
       });
     }
   };
@@ -65,14 +64,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-6 font-sans">
-      {/* Game Stats */}
+      {/* Game Stats (Removed for Strict Minimalism) */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">The Recursive Grid</h1>
-        <div className="flex gap-4 text-sm text-gray-600 font-medium">
-          <span>Moves: {gameState.moveCount}</span>
-          <span>Locked: {stats.lockedCount}/9</span>
-          <span>Sum: {stats.sum}</span>
-        </div>
       </div>
 
       {/* Grid Container */}
