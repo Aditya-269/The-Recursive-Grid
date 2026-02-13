@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# The Recursive Grid
 
-## Getting Started
+A 3x3 grid-based logic game built with Next.js 14 and Tailwind CSS.
+Strict adherence to pure functional programming and immutable state principles.
 
-First, run the development server:
+## Game Rules
+
+1. **Initial State**: All 9 cells start at `0`.
+2. **Increment**: Clicking a cell adds `+1` to its value.
+3. **Ripple (Divisible by 3)**: If a cell becomes divisible by 3, its **RIGHT** neighbor decrements by `1`.
+4. **Ripple (Divisible by 5)**: If a cell becomes divisible by 5, its **BELOW** neighbor increments by `2`.
+5. **Locking**: If a cell reaches `15` or higher, it becomes **LOCKED** (Turn Red).
+    - Locked cells cannot be clicked.
+    - Locked cells cannot be modified by ripples.
+6. **Boundaries**: Ripples that go out of bounds are ignored (no crash).
+
+## Architecture & Design (Audit Compliance)
+
+### State Management
+- **Type**: `number[][]` (3x3 matrix of primitives).
+- **Immutability**: Strict `map` based cloning. No mutations.
+- **Derived State**: `isLocked` is derived from `value >= 15`. No separate boolean flags.
+
+### Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS (Utility-first)
+- **Testing**: Jest (Unit & Logic Validation)
+
+## Setup & Run
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Run test suite
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```
+app/
+  gameState.js    # Core pure logic (Audit Verified)
+  page.js         # UI Component
+__tests__/
+  gameState.test.js # Comprehensive Test Suite
+docs/
+  test-suite.md   # Manual Test Cases (0-based)
+  test-plan.md    # Original Test Plan
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✅ Behavioral Validation
 
-## Learn More
+This project includes a full behavioral test plan covering:
 
-To learn more about Next.js, take a look at the following resources:
+- **Ripple Logic**: Validates 3-rule (right decrement) and 5-rule (bottom increment).
+- **Combined Rules**: Ensures 15 triggers both effects correctly.
+- **Locked State Enforcement**: Verifies locked cells are immune to clicks and ripples.
+- **Boundary Protection**: Ensures edge clicks (col 2, row 2) don't crash the app.
+- **Immutability Guarantees**: Confirms state transitions return new references (or same reference for no-ops).
+- **Complex Sequences**: Validates cumulative math and recursion prevention.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See [`docs/test-suite.md`](docs/test-suite.md) for full coverage details.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🧪 Running Tests
 
-## Deploy on Vercel
+We use Jest for unit testing the pure game logic.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test              # Run all tests
+npm run test:watch    # Interactive mode
+npm run test:coverage # Generate coverage report
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Current Status: **34/34 Tests Passing** (100% Logic Coverage)

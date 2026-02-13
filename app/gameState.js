@@ -34,15 +34,15 @@
 // ============================================================================
 
 /**
- * Creates initial game state with values 1-9
+ * Creates initial game state with values 0
  * @returns {GameState}
  */
 export function createInitialState() {
     return {
         grid: [
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 9]
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
         ],
         moveCount: 0,
         isGameOver: false
@@ -205,12 +205,12 @@ export function incrementCell(state, row, col, delta = 1) {
  * Pure function to update grid with game logic rules
  * 
  * Rules:
- * 1. Prevents clicking a locked cell (value >= 15)
- * 2. Increments the clicked cell by 1
- * 3. If new value is divisible by 3, decrement cell to the right (if valid and not locked)
- * 4. If new value is divisible by 5, increment cell below by 2 (if valid and not locked)
- * 5. No out-of-bounds errors
- * 6. Returns new immutable grid
+ * 1. Checks validation first
+ * 2. Return original ref if invalid or locked
+ * 3. Clone using map/spread
+ * 4. Apply increment
+ * 5. Apply ripple rules
+ * 6. Return new immutable grid
  * 
  * @param {number[][]} grid - Current 3x3 grid
  * @param {number} row - Row index (0-2)
@@ -218,38 +218,45 @@ export function incrementCell(state, row, col, delta = 1) {
  * @returns {number[][]} - New immutable grid
  */
 export function updateGrid(grid, row, col) {
-    // Validate position
+    // 1. Validate position
     if (!isValidPosition(row, col)) {
-        return grid.map(r => [...r]); // Return deep copy of unchanged grid
+        return grid; // Return original reference
     }
 
-    // Check if clicked cell is locked
+    // 2. Check locked state on ORIGINAL grid
     if (isLocked(grid[row][col])) {
-        return grid.map(r => [...r]); // Return deep copy of unchanged grid
+        return grid; // Return original reference
     }
 
-    // Create a deep copy of the grid for immutability
-    let newGrid = grid.map(r => [...r]);
+    // 3. Clone grid (map + spread)
+    const newGrid = grid.map(r => [...r]);
 
-    // Step 1: Increment the clicked cell by 1
+    // 4. Increment clicked cell
     newGrid[row][col] += 1;
     const newValue = newGrid[row][col];
 
-    // Step 2: If new value is divisible by 3, decrement cell to the right
+    // 5. Apply Ripple Rules
+
+    // Divisible by 3 -> Decrement RIGHT neighbor
     if (newValue % 3 === 0) {
         const rightCol = col + 1;
-        // Check if right cell exists and is not locked
-        if (isValidPosition(row, rightCol) && !isLocked(newGrid[row][rightCol])) {
-            newGrid[row][rightCol] -= 1;
+        if (isValidPosition(row, rightCol)) {
+            // Check locked state on updated grid (ripple shouldn't affect locked)
+            // Note: Locked state is derived from value >= 15.
+            // If the neighbor is already >= 15, it shouldn't change.
+            if (!isLocked(newGrid[row][rightCol])) {
+                newGrid[row][rightCol] -= 1;
+            }
         }
     }
 
-    // Step 3: If new value is divisible by 5, increment cell below by 2
+    // Divisible by 5 -> Increment BELOW neighbor by 2
     if (newValue % 5 === 0) {
         const belowRow = row + 1;
-        // Check if below cell exists and is not locked
-        if (isValidPosition(belowRow, col) && !isLocked(newGrid[belowRow][col])) {
-            newGrid[belowRow][col] += 2;
+        if (isValidPosition(belowRow, col)) {
+            if (!isLocked(newGrid[belowRow][col])) {
+                newGrid[belowRow][col] += 2;
+            }
         }
     }
 
