@@ -14,12 +14,33 @@ Strict adherence to pure functional programming and immutable state principles.
     - Locked cells cannot be modified by ripples.
 6. **Boundaries**: Ripples that go out of bounds are ignored (no crash).
 
-## Architecture & Design (Audit Compliance)
+## Architectural Decisions
 
-### State Management
-- **Type**: `number[][]` (3x3 matrix of primitives).
-- **Immutability**: Strict `map` based cloning. No mutations.
-- **Derived State**: `isLocked` is derived from `value >= 15`. No separate boolean flags.
+- **State Representation**: `number[][]` for O(1) access and direct mapping to the grid UI.
+- **Derived State**: `locked` status is derived on-the-fly (`value >= 15`) to prevent state desynchronization.
+- **Single-Trigger Ripple**: Ripple logic is strictly single-step (no cascading) to maintain predictable complexity.
+- **Boundary Guards**: Validated before cloning to prevent unnecessary object creation.
+- **Immutability**: Enforced using map-spread cloning to support history/undo features in the future.
+
+## Game Flow
+
+```mermaid
+graph TD
+    A[User Click] --> B{Validate Bounds}
+    B -- Invalid --> C[Return Original State]
+    B -- Valid --> D{Check Locked}
+    D -- Locked --> C
+    D -- Unlocked --> E[Clone Grid]
+    E --> F[Increment Cell]
+    F --> G{Check Ripple Rules}
+    G -- Div by 3 --> H[Decrement Right]
+    G -- Div by 5 --> I[Increment Below]
+    G -- No Ripple --> J[Return New Grid]
+    H --> J
+    I --> J
+```
+
+*Note: The flow strictly follows a validate-clone-modify pattern to ensure no side effects ensue on the original state reference.*
 
 ### Tech Stack
 - **Framework**: Next.js 14 (App Router)

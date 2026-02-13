@@ -169,16 +169,20 @@ export function getLockedCells(state) {
  */
 export function updateGrid(grid, row, col) {
     // 1. Validate position
+    // Guard clause: Fail fast if input is invalid.
     if (!isValidPosition(row, col)) {
-        return grid; // Return original reference
+        return grid; // Return original reference (no-op)
     }
 
     // 2. Check locked state on ORIGINAL grid
+    // Optimization: Avoid expensive cloning if the move is illegal.
     if (isLocked(grid[row][col])) {
-        return grid; // Return original reference
+        return grid; // Return original reference (no-op)
     }
 
     // 3. Clone grid (map + spread)
+    // Immutability: Create a shallow copy of the 2D array.
+    // This ensures React detects state changes and prevents side effects.
     const newGrid = grid.map(r => [...r]);
 
     // 4. Increment clicked cell
@@ -188,13 +192,13 @@ export function updateGrid(grid, row, col) {
     // 5. Apply Ripple Rules
 
     // Divisible by 3 -> Decrement RIGHT neighbor
-    // Guard: Zero does not trigger ripple (safety)
+    // Design Decision: Ripple applies only to the clicked cell's new value.
+    // No cascading chain reactions (ripples do not trigger further ripples).
     if (newValue !== 0 && newValue % 3 === 0) {
         const rightCol = col + 1;
         if (isValidPosition(row, rightCol)) {
             // Check locked state on updated grid (ripple shouldn't affect locked)
             // Note: Locked state is derived from value >= 15.
-            // If the neighbor is already >= 15, it shouldn't change.
             if (!isLocked(newGrid[row][rightCol])) {
                 newGrid[row][rightCol] -= 1;
             }
@@ -202,7 +206,7 @@ export function updateGrid(grid, row, col) {
     }
 
     // Divisible by 5 -> Increment BELOW neighbor by 2
-    // Guard: Zero does not trigger ripple (safety)
+    // Independent check: A number can trigger both rules (e.g., 15).
     if (newValue !== 0 && newValue % 5 === 0) {
         const belowRow = row + 1;
         if (isValidPosition(belowRow, col)) {
