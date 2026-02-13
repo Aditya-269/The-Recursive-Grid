@@ -220,13 +220,11 @@ export function incrementCell(state, row, col, delta = 1) {
 export function updateGrid(grid, row, col) {
     // Validate position
     if (!isValidPosition(row, col)) {
-        console.warn(`Invalid position: (${row}, ${col})`);
         return grid.map(r => [...r]); // Return deep copy of unchanged grid
     }
 
     // Check if clicked cell is locked
     if (isLocked(grid[row][col])) {
-        console.warn(`Cell at (${row}, ${col}) is locked (value >= 15)`);
         return grid.map(r => [...r]); // Return deep copy of unchanged grid
     }
 
