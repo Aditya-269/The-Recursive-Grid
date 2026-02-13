@@ -152,15 +152,14 @@ export function getLockedCells(state) {
 // ============================================================================
 
 /**
- * Pure function to update grid with game logic rules
+ * Pure function to update grid with cascading ripple logic
  * 
  * Rules:
- * 1. Checks validation first
- * 2. Return original ref if invalid or locked
- * 3. Clone using map/spread
- * 4. Apply increment
- * 5. Apply ripple rules
- * 6. Return new immutable grid
+ * 1. Validates position and locked state
+ * 2. Uses BFS queue to process cascading ripples
+ * 3. Each cell processes only once per click (tracked via Set)
+ * 4. Ripples trigger when cell value is divisible by 3 or 5
+ * 5. Maintains immutability throughout
  * 
  * @param {number[][]} grid - Current 3x3 grid
  * @param {number} row - Row index (0-2)
@@ -169,55 +168,86 @@ export function getLockedCells(state) {
  */
 export function updateGrid(grid, row, col) {
     // 1. Validate position
-    // Guard clause: Fail fast if input is invalid.
     if (!isValidPosition(row, col)) {
         return grid; // Return original reference (no-op)
     }
 
     // 2. Check locked state on ORIGINAL grid
-    // Optimization: Avoid expensive cloning if the move is illegal.
     if (isLocked(grid[row][col])) {
         return grid; // Return original reference (no-op)
     }
 
-    // 3. Clone grid (map + spread)
-    // Immutability: Create a shallow copy of the 2D array.
-    // This ensures React detects state changes and prevents side effects.
+    // 3. Clone grid for immutability
     const newGrid = grid.map(r => [...r]);
 
-    // 4. Increment clicked cell
-    newGrid[row][col] += 1;
-    const newValue = newGrid[row][col];
+    // 4. Initialize BFS queue and processed tracking
+    const queue = [{ row, col, isOriginalClick: true }];
+    const processed = new Set();
 
-    // 5. Apply Ripple Rules
+    // 5. Process queue with cascading ripple logic
+    while (queue.length > 0) {
+        const current = queue.shift();
+        const { row: r, col: c, isOriginalClick } = current;
 
-    // Divisible by 3 -> Decrement RIGHT neighbor
-    // Design Decision: Ripple applies only to the clicked cell's new value.
-    // No cascading chain reactions (ripples do not trigger further ripples).
-    if (newValue !== 0 && newValue % 3 === 0) {
-        const rightCol = col + 1;
-        if (isValidPosition(row, rightCol)) {
-            // Check locked state on updated grid (ripple shouldn't affect locked)
-            // Note: Locked state is derived from value >= 15.
-            if (!isLocked(newGrid[row][rightCol])) {
-                newGrid[row][rightCol] -= 1;
+        const cellKey = `${r},${c}`;
+
+        // Skip if already processed (prevents infinite loops)
+        if (processed.has(cellKey)) {
+            continue;
+        }
+
+        // Mark as processed NOW (when dequeued, not when queued)
+        processed.add(cellKey);
+
+        // Increment only the original clicked cell
+        if (isOriginalClick) {
+            newGrid[r][c] += 1;
+        }
+
+        const value = newGrid[r][c];
+
+        // Skip ripple if value is 0 (safety guard)
+        if (value === 0) {
+            continue;
+        }
+
+        // Apply ripple rules and queue affected cells
+
+        // Rule 1: Divisible by 3 → Decrement RIGHT neighbor
+        if (value % 3 === 0) {
+            const rightCol = c + 1;
+            if (isValidPosition(r, rightCol)) {
+                // Only modify if not locked
+                if (!isLocked(newGrid[r][rightCol])) {
+                    newGrid[r][rightCol] -= 1;
+
+                    // Queue the affected cell for potential cascading
+                    // Don't check processed here - let it queue even if already queued
+                    queue.push({ row: r, col: rightCol, isOriginalClick: false });
+                }
             }
         }
-    }
 
-    // Divisible by 5 -> Increment BELOW neighbor by 2
-    // Independent check: A number can trigger both rules (e.g., 15).
-    if (newValue !== 0 && newValue % 5 === 0) {
-        const belowRow = row + 1;
-        if (isValidPosition(belowRow, col)) {
-            if (!isLocked(newGrid[belowRow][col])) {
-                newGrid[belowRow][col] += 2;
+        // Rule 2: Divisible by 5 → Increment BELOW neighbor by 2
+        if (value % 5 === 0) {
+            const belowRow = r + 1;
+            if (isValidPosition(belowRow, c)) {
+                // Only modify if not locked
+                if (!isLocked(newGrid[belowRow][c])) {
+                    newGrid[belowRow][c] += 2;
+
+                    // Queue the affected cell for potential cascading
+                    // Don't check processed here - let it queue even if already queued
+                    queue.push({ row: belowRow, col: c, isOriginalClick: false });
+                }
             }
         }
     }
 
     return newGrid;
 }
+
+
 
 /**
  * Reset the game to initial state

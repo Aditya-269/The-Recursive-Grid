@@ -271,4 +271,118 @@ describe('Game State Logic', () => {
             expect(stats.sum).toBe(18);
         });
     });
+
+    // ==========================================
+    // 6. Cascading Ripple Tests (7 Tests)
+    // ==========================================
+    describe('Cascading Ripples', () => {
+        it('should trigger cascading ripples when a neighbor changes to a divisible value', () => {
+            // Setup: (0,0) is 2, (0,1) is 4.
+            // Click (0,0) -> becomes 3.
+            // 3 triggers ripple -> (0,1) decrements to 3.
+            // (0,1) is now 3. It SHOULD trigger its own ripple -> (0,2) decrements to -1.
+
+            const grid = [
+                [2, 4, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ];
+
+            const result = updateGrid(grid, 0, 0);
+
+            expect(result[0][0]).toBe(3); // Original click
+            expect(result[0][1]).toBe(3); // First ripple (4 -> 3)
+            expect(result[0][2]).toBe(-1); // Second ripple (0 -> -1) - Cascading works!
+        });
+
+        it('should verify 6 triggers ripple to right neighbor', () => {
+            const testGrid = [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 5, 2]
+            ];
+
+            const result = updateGrid(testGrid, 2, 1);
+
+            expect(result[2][1]).toBe(6); // Clicked cell becomes 6
+            expect(result[2][2]).toBe(1); // Right neighbor: 2 - 1 = 1
+        });
+
+        it('should trace clicking (1,1) from 0 to 15 with full cascading', () => {
+            let grid = [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ];
+
+            // Click 15 times to reach 15
+            for (let i = 0; i < 15; i++) {
+                grid = updateGrid(grid, 1, 1);
+            }
+
+            // Verify final state matches expected cascading behavior
+            expect(grid[1][1]).toBe(15);
+            expect(grid[1][2]).toBe(-5); // Accumulated ripples from divisible by 3
+            expect(grid[2][1]).toBe(6);  // Accumulated ripples from divisible by 5
+            expect(grid[2][2]).toBe(1);  // Cascading ripple from 6 (divisible by 3)
+        });
+
+        it('should handle single click from 14 to 15', () => {
+            const grid = [
+                [0, 0, 0],
+                [0, 14, 0],
+                [0, 0, 0]
+            ];
+
+            const result = updateGrid(grid, 1, 1);
+
+            expect(result[1][1]).toBe(15);
+            expect(result[1][2]).toBe(-1); // 15 % 3 == 0, decrement right
+            expect(result[2][1]).toBe(2);  // 15 % 5 == 0, increment below by 2
+            expect(result[2][2]).toBe(0);  // No cascading from single click 14->15
+        });
+
+        it('should not modify locked cells (15) when clicked', () => {
+            const grid = [
+                [0, 0, 0],
+                [0, 15, 0],
+                [0, 0, 0]
+            ];
+
+            const result = updateGrid(grid, 1, 1);
+
+            // Should return same reference (no-op)
+            expect(grid).toBe(result);
+        });
+
+        it('should trace multiple clicks on (2,1) with ripple effects', () => {
+            let grid = [
+                [0, 0, 0],
+                [0, 15, -5],
+                [0, 0, 0]
+            ];
+
+            // Click 6 times to reach 6
+            for (let i = 0; i < 6; i++) {
+                grid = updateGrid(grid, 2, 1);
+            }
+
+            expect(grid[2][1]).toBe(6);
+            expect(grid[2][2]).toBe(-2); // Accumulated ripples from 3 and 6
+        });
+
+        it('should verify 15 triggers ripples to both right and below neighbors', () => {
+            const grid = [
+                [0, 0, 0],
+                [0, 14, 0],
+                [0, 0, 0]
+            ];
+
+            const result = updateGrid(grid, 1, 1);
+
+            expect(result[1][1]).toBe(15);
+            expect(result[1][2]).toBe(-1); // Right neighbor decremented
+            expect(result[2][1]).toBe(2);  // Below neighbor incremented by 2
+        });
+    });
 });
