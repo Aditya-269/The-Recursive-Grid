@@ -197,6 +197,67 @@ export function incrementCell(state, row, col, delta = 1) {
     return updateCell(state, row, col, currentValue + delta);
 }
 
+// ============================================================================
+// GAME LOGIC - PURE UPDATE FUNCTION
+// ============================================================================
+
+/**
+ * Pure function to update grid with game logic rules
+ * 
+ * Rules:
+ * 1. Prevents clicking a locked cell (value >= 15)
+ * 2. Increments the clicked cell by 1
+ * 3. If new value is divisible by 3, decrement cell to the right (if valid and not locked)
+ * 4. If new value is divisible by 5, increment cell below by 2 (if valid and not locked)
+ * 5. No out-of-bounds errors
+ * 6. Returns new immutable grid
+ * 
+ * @param {number[][]} grid - Current 3x3 grid
+ * @param {number} row - Row index (0-2)
+ * @param {number} col - Column index (0-2)
+ * @returns {number[][]} - New immutable grid
+ */
+export function updateGrid(grid, row, col) {
+    // Validate position
+    if (!isValidPosition(row, col)) {
+        console.warn(`Invalid position: (${row}, ${col})`);
+        return grid.map(r => [...r]); // Return deep copy of unchanged grid
+    }
+
+    // Check if clicked cell is locked
+    if (isLocked(grid[row][col])) {
+        console.warn(`Cell at (${row}, ${col}) is locked (value >= 15)`);
+        return grid.map(r => [...r]); // Return deep copy of unchanged grid
+    }
+
+    // Create a deep copy of the grid for immutability
+    let newGrid = grid.map(r => [...r]);
+
+    // Step 1: Increment the clicked cell by 1
+    newGrid[row][col] += 1;
+    const newValue = newGrid[row][col];
+
+    // Step 2: If new value is divisible by 3, decrement cell to the right
+    if (newValue % 3 === 0) {
+        const rightCol = col + 1;
+        // Check if right cell exists and is not locked
+        if (isValidPosition(row, rightCol) && !isLocked(newGrid[row][rightCol])) {
+            newGrid[row][rightCol] -= 1;
+        }
+    }
+
+    // Step 3: If new value is divisible by 5, increment cell below by 2
+    if (newValue % 5 === 0) {
+        const belowRow = row + 1;
+        // Check if below cell exists and is not locked
+        if (isValidPosition(belowRow, col) && !isLocked(newGrid[belowRow][col])) {
+            newGrid[belowRow][col] += 2;
+        }
+    }
+
+    return newGrid;
+}
+
 /**
  * Reset the game to initial state
  * @returns {GameState}

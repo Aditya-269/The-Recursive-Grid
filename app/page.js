@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   createInitialState,
   getCellInfo,
-  incrementCell,
+  updateGrid,
   isCellLocked,
   getGridStats,
   resetGame
@@ -15,9 +15,17 @@ export default function Home() {
   const stats = getGridStats(gameState);
 
   const handleCellClick = (row, col) => {
-    // Increment cell value by 1 (for demonstration)
-    const newState = incrementCell(gameState, row, col, 1);
-    setGameState(newState);
+    // Use the pure updateGrid function with game logic
+    const newGrid = updateGrid(gameState.grid, row, col);
+
+    // Only update state if grid actually changed
+    if (newGrid !== gameState.grid) {
+      setGameState({
+        ...gameState,
+        grid: newGrid,
+        moveCount: gameState.moveCount + 1
+      });
+    }
   };
 
   const handleReset = () => {
